@@ -4,9 +4,10 @@ var boundarySize = 1000;
 var nodeSize = 24;
 var nodes = [];
 
-function updateGraph(graph) {
+function updateGraph(graph, renderer) {
 
     graph.clear();
+    renderer.reset();
 
     nodesCount = $('#nodesInput').val();
     radius = $('#radiusInput').val();
@@ -40,6 +41,8 @@ function updateGraph(graph) {
             }
         }
     }
+
+    renderer.moveTo(300,300);
 }
 function onLoad() {
     var graph = Viva.Graph.graph();
@@ -64,7 +67,6 @@ function onLoad() {
     $('#boundaryInput').val(boundarySize);
     $('#nodeSizeInput').val(nodeSize);
 
-    updateGraph(graph);
 
 
     graphics.node(function(node) {
@@ -121,15 +123,19 @@ function onLoad() {
 
     var renderer = Viva.Graph.View.renderer(graph, {
         graphics : graphics,
-        layout   : layout
+        layout   : layout,
+        container  : document.getElementById('graphDiv')
     });
+
     renderer.run();
+
+    updateGraph(graph, renderer);
+
 
     $('#graphForm').submit(function(event) {
         // UPDATE GRAPH
         event.preventDefault();
-        renderer.reset();
-        updateGraph(graph);
+        updateGraph(graph, renderer);
 
     });
 

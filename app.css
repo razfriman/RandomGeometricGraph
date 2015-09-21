@@ -17,6 +17,13 @@ svg {
     overflow: auto;
 }
 
+#graphDiv {
+    position: fixed;
+    left: 213px;
+    right: 0px;
+    height: 100%;
+}
+
 
 .sidebar {
     position: fixed;

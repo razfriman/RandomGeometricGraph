@@ -1,0 +1,20 @@
+{
+  "name": "GraphTest2",
+  "version": "0.0.0",
+  "authors": [
+    "Raz Friman <superraz375@yahoo.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "~3.3.5",
+    "lodash": "~3.10.1",
+    "vivagraphjs": "~0.8.1"
+  }
+}

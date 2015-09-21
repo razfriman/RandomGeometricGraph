@@ -1,7 +1,7 @@
-var nodesCount = 50;
-var radius = 270;
-var boundarySize = 1000;
-var nodeSize = 24;
+var nodesCount = 40;
+var radius = 200;
+var boundarySize = 500;
+var nodeSize = 10;
 var nodes = [];
 
 function updateGraph(graph, renderer) {

@@ -4,6 +4,44 @@ var boundarySize = 500;
 var nodeSize = 10;
 var nodes = [];
 
+function cross(o, a, b) {
+    var result = (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+    return result;
+}
+
+/**
+ * @param points An array of [X, Y] coordinates
+ */
+function convexHull(points) {
+
+    var lower = [];
+    for (var i = 0; i < points.length; i++) {
+        var p = points[i];
+        while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+            lower.pop();
+        }
+        lower.push(p);
+    }
+
+
+    var upper = [];
+    for (var i = points.length - 1; i >= 0; i--) {
+        var p = points[i];
+        while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+            upper.pop();
+        }
+        upper.push(p);
+    }
+
+    upper.pop();
+    lower.pop();
+
+    var combined = lower.concat(upper);
+    return combined;
+}
+
+
+
 function updateGraph(graph, renderer) {
 
     graph.clear();
@@ -15,21 +53,36 @@ function updateGraph(graph, renderer) {
     nodeSize = $('#nodeSizeInput').val();
     nodes = [];
 
-    for(var i = 0; i < nodeCount; ++i) {
+    for(var i = 0; i < nodeCount; i++) {
         nodes.push({
-            id: i,
             x: _.random(0,boundarySize),
             y: _.random(0,boundarySize)
         });
     }
 
-    _.each(nodes, function(node) {
+    //nodes = _.sortBy(nodes, 'x');
+    nodes = _.sortByAll(nodes, ['x','y']);
+
+    _.each(nodes, function(node, index) {
+        node.id = index;
         graph.addNode(node.id, node);
     });
 
-    for(var i = 0; i < nodeCount; ++i) {
+    var hullNodes = convexHull(nodes);
+    for(var i = 0; i < hullNodes.length; i++) {
+
+
+        var node1 = hullNodes[i];
+        var node2 = hullNodes[(i + 1) % hullNodes.length];
+
+        graph.addLink(node1.id, node2.id, {isHull: true});
+
+    }
+
+
+    for(var i = 0; i < nodeCount; i++) {
         var point1 = nodes[i];
-        for(var j = 0; j < nodeCount; ++j) {
+        for(var j = 0; j < nodeCount; j++) {
             if(i == j) continue;
 
             var point2 = nodes[j];
@@ -37,12 +90,13 @@ function updateGraph(graph, renderer) {
             var dist = getDistance(point1.x, point1.y, point2.x, point2.y);
 
             if(dist <= radius) {
-                graph.addLink(i, j);
+                graph.addLink(point1.id, point2.id, {isHull: false});
             }
         }
     }
 
-    renderer.moveTo(300,300);
+    // Center the view
+    renderer.moveTo(boundarySize / 2,boundarySize / 2);
 }
 function onLoad() {
     var graph = Viva.Graph.graph();
@@ -77,7 +131,7 @@ function onLoad() {
             var linkUI = graphics.getLinkUI(link.id);
             if (linkUI) {
                 // linkUI is a UI object created by graphics below
-                linkUI.attr('stroke', isOn ? 'red' : 'gray');
+                linkUI.attr('stroke', isOn ? 'red' : (link.data.isHull ? 'blue' : 'gray'));
             }
 
             var nodeUI = graphics.getNodeUI(node.id);
@@ -146,7 +200,7 @@ function onLoad() {
             return true;
         });
         */
-        
+
         $(rect).hover(function() { // mouse over
             highlightRelatedNodes(node.id, true);
 
@@ -177,7 +231,7 @@ function onLoad() {
 
     graphics.link(function(link){
         return Viva.Graph.svg('path')
-            .attr('stroke', 'gray')
+            .attr('stroke', link.data.isHull ? 'blue' : 'gray')
             .attr('stroke-width', 1);
 
     }).placeLink(function(linkUI, fromPos, toPos) {
@@ -190,6 +244,7 @@ function onLoad() {
     var renderer = Viva.Graph.View.renderer(graph, {
         graphics : graphics,
         layout   : layout,
+        interactive: 'scroll drag',
         container  : document.getElementById('graphDiv')
     });
 

@@ -2,7 +2,11 @@ var nodeCount = 40;
 var radius = 200;
 var boundarySize = 500;
 var nodeSize = 10;
+
 var nodes = [];
+var rggLinks = [];
+var convexHullLinks = [];
+var rggLinksAdjacencyList = {};
 
 function cross(o, a, b) {
     var result = (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
@@ -69,16 +73,21 @@ function updateGraph(graph, renderer) {
     });
 
     var hullNodes = convexHull(nodes);
+
+    convexHullLinks = [];
+
     for(var i = 0; i < hullNodes.length; i++) {
 
 
         var node1 = hullNodes[i];
         var node2 = hullNodes[(i + 1) % hullNodes.length];
 
-        graph.addLink(node1.id, node2.id, {isHull: true});
+        var l = graph.addLink(node1.id, node2.id, {isHull: true});
+        convexHullLinks.push(l);
 
     }
 
+    rggLinks = [];
 
     for(var i = 0; i < nodeCount; i++) {
         var point1 = nodes[i];
@@ -90,10 +99,49 @@ function updateGraph(graph, renderer) {
             var dist = getDistance(point1.x, point1.y, point2.x, point2.y);
 
             if(dist <= radius) {
-                graph.addLink(point1.id, point2.id, {isHull: false});
+
+                var l = graph.addLink(point1.id, point2.id, {isHull: false});
+                rggLinks.push(l);
+
+                var point1List = rggLinksAdjacencyList[point1.id];
+                if(!point1List) {
+                    rggLinksAdjacencyList[point1.id] = [];
+                }
+                rggLinksAdjacencyList[point1.id].push(point2.id);
             }
         }
     }
+
+    //console.log(rggLinksAdjacencyList);
+
+    var maxDegree = 0;
+    var maxDegreeNode = null;
+
+    var minDegree = -1;
+    var minDegreeNode = null;
+    _.forOwn(rggLinksAdjacencyList, function(list, nodeId) {
+        var length = list.length;
+
+        if(length > maxDegree) {
+            maxDegree = length;
+            maxDegreeNode = nodeId;
+        }
+
+        if(length >= 0 && (minDegree == -1 || length < minDegree)) {
+            minDegree = length;
+            minDegreeNode = nodeId;
+        }
+    });
+
+
+    console.log('Min Degree: ', minDegree);
+    console.log('Min Degree Node: ', minDegreeNode);
+    console.log('Min Degree Links: ', rggLinksAdjacencyList[minDegreeNode]);
+
+
+    console.log('Max Degree: ', maxDegree);
+    console.log('Max Degree Node: ', maxDegreeNode);
+    console.log('Max Degree Links: ', rggLinksAdjacencyList[maxDegreeNode]);
 
     // Center the view
     renderer.moveTo(boundarySize / 2,boundarySize / 2);
@@ -188,7 +236,8 @@ function onLoad() {
         var rect = Viva.Graph.svg('rect')
             .attr('width', nodeSize)
             .attr('height', nodeSize)
-            .attr('stroke-width', 3);
+            .attr('stroke-width', 3)
+            .attr('stroke', 'black');
         ui.append(rect);
 
         /*
@@ -232,7 +281,7 @@ function onLoad() {
     graphics.link(function(link){
         return Viva.Graph.svg('path')
             .attr('stroke', link.data.isHull ? 'blue' : 'gray')
-            .attr('stroke-width', 1);
+            .attr('stroke-width', '1');
 
     }).placeLink(function(linkUI, fromPos, toPos) {
 
@@ -257,7 +306,26 @@ function onLoad() {
         // UPDATE GRAPH
         event.preventDefault();
         updateGraph(graph, renderer);
+    });
 
+    $('#showRGGLinks').click(function(event) {
+
+        var isChecked = $('#showRGGLinks').prop("checked");
+
+        _.each(rggLinks, function(link) {
+            var linkUI = graphics.getLinkUI(link.id);
+            linkUI.attr('stroke-width', isChecked ? '1' : '0');
+        });
+    });
+
+    $('#showConvexHullLinks').click(function(event) {
+
+        var isChecked = $('#showConvexHullLinks').prop("checked");
+
+        _.each(convexHullLinks, function(link) {
+            var linkUI = graphics.getLinkUI(link.id);
+            linkUI.attr('stroke-width', isChecked ? '1' : '0');
+        });
     });
 
 
